@@ -1,51 +1,94 @@
-// Adding event listener to the form submit
-document.getElementById('resumeForm')?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    
-    // Getting username from the input
-    const username = (document.getElementById('username') as HTMLInputElement).value.trim();
+// Get references to the form and display area
+const form = document.getElementById('resume-form') as HTMLFormElement;
+const resumeDisplayElement = document.getElementById('resume-display') as
+HTMLDivElement;
 
-    // Getting the file input element
-    const fileInput = document.getElementById('resumeFile') as HTMLInputElement;
+const shareableLinkContainer = document.getElementById('shareable-link-container') as HTMLDivElement;
 
-    // Checking if any files are selected
-    if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Please select a file');
-        return;
-    }
+const shareableLinkElement = document.getElementById('shareable-link') as
+HTMLAnchorElement;
+const downloadPdfButton = document.getElementById('download-pdf') as
+HTMLButtonElement;
+// Handle form submission
+form.addEventListener('submit', (event: Event) => {
+event.preventDefault(); // prevent page reload
+// Collect input values
+const username = (document.getElementById('username') as
+HTMLInputElement).value;
+const name = (document.getElementById('name') as HTMLInputElement).value;
+const email = (document.getElementById('email') as HTMLInputElement).value;
+const phone = (document.getElementById('phone') as HTMLInputElement).value;
+const education = (document.getElementById('education') as
+HTMLTextAreaElement).value;
+const experience = (document.getElementById('experience') as
+HTMLTextAreaElement).value;
+const skills = (document.getElementById('skills') as
+HTMLTextAreaElement).value;
+// Save form data in localStorage with the username as the key
+const resumeData = {
+name,
+email,
+phone,
+education,
+experience,
+skills
+};
+localStorage.setItem(username, JSON.stringify(resumeData)); // Saving the data locally
 
-    // Correctly accessing the first file from the file input
-    const file = fileInput.files[0];
+// Generate the resume content dynamically
 
-    // Creating FormData object and appending data
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('resume', file);
+const resumeHTML = `
+<h2>Editable Resume</h2>
+<h3>Personal Information</h3>
+<p><b>Name:</b> <span contenteditable="true">${name}</span></p>
+<p><b>Email:</b> <span contenteditable="true">${email}</span></p>
+<p><b>Phone:</b> <span contenteditable="true">${phone}</span></p>
+<h3>Education</h3>
+<p contenteditable="true">${education}</p>
+<h3>Experience</h3>
+<p contenteditable="true">${experience}</p>
+<h3>Skills</h3>
+<p contenteditable="true">${skills}</p>
+`;
+// Display the generated resume
+resumeDisplayElement.innerHTML = resumeHTML;
+// Generate a shareable URL with the username only
+const shareableURL =
+`${window.location.origin}?username=${encodeURIComponent(username)}`;
+// Display the shareable link
+shareableLinkContainer.style.display = 'block';
+shareableLinkElement.href = shareableURL;
+shareableLinkElement.textContent = shareableURL;
+});
+// Handle PDF download
+downloadPdfButton.addEventListener('click', () => {
+window.print(); // This will open the print dialog and allow the user to saveas PDF
 
-    try {
-        // Sending the FormData to the backend
-        const response = await fetch('https://your-backend-domain.com/upload', {
-            method: 'POST',
-            body: formData,
-        });
+});
+// Prefill the form based on the username in the URL
+window.addEventListener('DOMContentLoaded', () => {
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('username');
+if (username) {
 
-        // Parsing the response
-        const result = await response.json();
-        
-        // Handling the response based on success
-        if (result.success) {
-            const resumeUrl = `https://${username}.vercel.app/resume`;
-            document.getElementById('linkMessage')!.innerHTML = `
-                Resume uploaded successfully! 
-                <a href="${resumeUrl}" target="_blank">View Resume</a> 
-                | <a href="${resumeUrl}" download="resume.pdf">Download PDF</a>
-            `;
-        } else {
-            document.getElementById('linkMessage')!.innerText = 'Failed to upload resume.';
-        }
-    } catch (error) {
-        // Handling any errors that occur during the fetch
-        console.error('Error uploading resume:', error);
-        document.getElementById('linkMessage')!.innerText = 'An error occurred.';
-    }
+// Autofill form if data is found in localStorage
+const savedResumeData = localStorage.getItem(username);
+if (savedResumeData) {
+const resumeData = JSON.parse(savedResumeData);
+(document.getElementById('username') as HTMLInputElement).value =
+username;
+(document.getElementById('name') as HTMLInputElement).value =
+resumeData.name;
+(document.getElementById('email') as HTMLInputElement).value =
+resumeData.email;
+(document.getElementById('phone') as HTMLInputElement).value =
+resumeData.phone;
+(document.getElementById('education') as HTMLTextAreaElement).value =
+resumeData.education;
+(document.getElementById('experience') as HTMLTextAreaElement).value
+= resumeData.experience;
+(document.getElementById('skills') as HTMLTextAreaElement).value =
+resumeData.skills;
+}
+}
 });
